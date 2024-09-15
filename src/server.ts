@@ -4,7 +4,6 @@ import path from 'path';
 import fs from 'fs';
 
 const app = express();
-const PORT = process.env.PORT || 6000;
 
 // Middleware for parsing JSON bodies
 app.use(express.json());
@@ -78,7 +77,8 @@ app.delete('/images/:name', (req, res) => {
         res.json({ message: 'File deleted successfully' });
     });
 });
-
+const PORT = process.env.PORT || 6000
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+

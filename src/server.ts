@@ -52,19 +52,46 @@ app.post('/upload', upload.array('images', 5), (req, res) => {
     res.json({ message: 'Images uploaded successfully', images: imagePaths });
 });
 
+
+
 app.get('/images', (req, res) => {
     const directoryPath = path.join(__dirname, '../uploads/images/');
+    
     fs.readdir(directoryPath, (err, files) => {
         if (err) {
             return res.status(500).json({ error: 'Unable to scan files' });
         }
-        const images = files.map(file => ({
-            url: `http://${req.hostname}:${PORT}/uploads/images/${file}`,
-            name: file
-        }));
+
+        const images = files.map(file => {
+            const filePath = path.join(directoryPath, file);
+            const stats = fs.statSync(filePath);  // Get file stats (size, creation date, etc.)
+
+            console.log(filePath)
+            
+            return {
+                url: `http://${req.hostname}:${PORT}/uploads/images/${file}`,
+                name: file,
+                size: stats.size, // File size in bytes
+                createdAt: stats.birthtime, // File creation date
+            };
+        });
+
         res.json(images);
     });
 });
+
+
+app.get('/image/:name', (req, res) => {
+    const imageName = req.params.name;
+    const imagePath = path.join(__dirname, '../uploads/images/', imageName);
+
+    if (fs.existsSync(imagePath)) {
+        res.sendFile(imagePath);
+    } else {
+        res.status(404).json({ error: 'Image not found' });
+    }
+});
+
 
 app.delete('/images/:name', (req, res) => {
     const fileName = req.params.name;
@@ -77,7 +104,36 @@ app.delete('/images/:name', (req, res) => {
         res.json({ message: 'File deleted successfully' });
     });
 });
-const PORT = process.env.PORT || 6000
+
+// New route to delete all images
+app.delete('/images', (req, res) => {
+    const directoryPath = path.join(__dirname, '../uploads/images/');
+    fs.readdir(directoryPath, (err, files) => {
+        if (err) {
+            return res.status(500).json({ error: 'Unable to scan files' });
+        }
+        if (files.length === 0) {
+            return res.json({ message: 'No files to delete' });
+        }
+
+        // Delete each file
+        const deletePromises = files.map(file => {
+            const filePath = path.join(directoryPath, file);
+            return new Promise((resolve, reject) => {
+                fs.unlink(filePath, err => {
+                    if (err) reject(err);
+                    else resolve(true);
+                });
+            });
+        });
+
+        Promise.all(deletePromises)
+            .then(() => res.json({ message: 'All files deleted successfully' }))
+            .catch(() => res.status(500).json({ error: 'Error deleting some files' }));
+    });
+});
+
+const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

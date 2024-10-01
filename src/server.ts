@@ -11,6 +11,11 @@ app.use(express.json());
 // Static folder to serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+
+// app.use('/', (req, res) => {
+//     res.send('Hello, World!');
+// })
+
 // Utility to ensure upload directories exist
 const createUploadsDir = (dir: string) => {
     if (!fs.existsSync(dir)) {
